@@ -52,8 +52,8 @@ docker-compose up --build
 # 3. En otra terminal, ejecutar migraciones
 docker-compose exec backend python manage.py migrate
 
-# 4. Crear superusuario
-docker-compose exec backend python manage.py createsuperuser
+# Nota: El superusuario se crea automáticamente con el script init.sh
+# Usuario: admin / Contraseña: admin
 ```
 
 ### Acceder a la aplicación
@@ -89,30 +89,18 @@ docker-compose exec backend bash
 
 # Ejecutar comandos Django
 docker-compose exec backend python manage.py <comando>
-
-# Crear superusuario automáticamente (con credenciales por defecto)
-./create_superuser.sh
-
-# O crear superusuario interactivamente
-docker-compose exec backend python manage.py createsuperuser
 ```
 
 ### Credenciales por defecto del superusuario
 
-Si usas el script `create_superuser.sh`, se creará un superusuario con:
+El script `init.sh` crea automáticamente un superusuario con las siguientes credenciales:
 
 - **Username**: `admin`
-- **Password**: `admin123`
+- **Password**: `admin`
 - **Email**: `admin@example.com`
 - **Role**: `admin`
 
 ⚠️ **IMPORTANTE**: Cambia estas credenciales en producción.
-
-Para personalizar las credenciales:
-
-```bash
-SUPERUSER_USERNAME=miadmin SUPERUSER_PASSWORD=micontraseña ./create_superuser.sh
-```
 
 ## Estructura del Proyecto
 
