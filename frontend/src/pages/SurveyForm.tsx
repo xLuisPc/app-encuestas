@@ -91,6 +91,14 @@ const SurveyForm = () => {
     try {
       const data = await surveysApi.getSurvey(id!)
       console.log('Encuesta cargada:', data)
+
+      // Si la encuesta ya tiene al menos una respuesta, bloquear edición
+      if (data.total_responses && data.total_responses > 0) {
+        alert('No puedes editar una encuesta que ya tiene respuestas registradas.')
+        navigate('/surveys')
+        return
+      }
+
       setSurvey({
         title: data.title,
         description: data.description,

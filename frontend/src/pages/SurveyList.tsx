@@ -271,7 +271,18 @@ const SurveyList = () => {
                     <>
                       <Button
                         variant="primary"
-                        onClick={() => navigate(`/surveys/${survey.id}/edit`)}
+                        onClick={() => {
+                          if ((survey.total_responses || 0) > 0) {
+                            Swal.fire({
+                              title: 'Edición bloqueada',
+                              text: 'No puedes editar una encuesta que ya tiene respuestas registradas.',
+                              icon: 'info',
+                              confirmButtonColor: '#2563eb',
+                            })
+                            return
+                          }
+                          navigate(`/surveys/${survey.id}/edit`)
+                        }}
                         className="text-sm"
                       >
                         Editar

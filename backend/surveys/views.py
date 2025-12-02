@@ -46,6 +46,26 @@ class SurveyViewSet(viewsets.ModelViewSet):
             return [IsSurveyCreatorOrAdmin()]
         return super().get_permissions()
 
+    def update(self, request, *args, **kwargs):
+        """No permitir editar encuestas que ya tengan al menos una respuesta."""
+        survey = self.get_object()
+        if survey.total_responses > 0:
+            return DRFResponse(
+                {'error': 'No puedes editar una encuesta que ya tiene respuestas registradas.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        """También bloquear partial_update cuando ya hay respuestas."""
+        survey = self.get_object()
+        if survey.total_responses > 0:
+            return DRFResponse(
+                {'error': 'No puedes editar una encuesta que ya tiene respuestas registradas.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().partial_update(request, *args, **kwargs)
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
