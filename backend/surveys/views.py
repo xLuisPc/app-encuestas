@@ -119,7 +119,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
                             question=question
                         ).values('response').distinct().count()
                     
-                    elif question.question_type == 'matrix':
+                    elif question.question_type in ['matrix', 'matrix_mul']:
                         # Contar respuestas por fila y columna
                         matrix_data = {}
                         answers = Answer.objects.filter(
@@ -281,7 +281,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
                     chart_row = row + 18
                     ws.add_chart(bar_chart, f'E{chart_row}')
             
-            elif question.question_type == 'matrix':
+            elif question.question_type in ['matrix', 'matrix_mul']:
                 # Obtener columnas y filas ordenadas
                 columns = question.matrix_columns.all().order_by('order')
                 rows_data = question.matrix_rows.all().order_by('order')

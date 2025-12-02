@@ -46,11 +46,14 @@ class Question(models.Model):
         ('single', 'Opción Única'),
         ('multiple', 'Opción Múltiple'),
         ('matrix', 'Matriz opción única'),
+        # Usamos clave corta 'matrix_mul' (<= 10 chars) para respetar el tipo varchar(10) existente
+        ('matrix_mul', 'Matriz Opción Múltiple'),
     ]
     
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField()
-    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES)
+    # Aumentar max_length para soportar 'matrix_multiple'
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
     is_required = models.BooleanField(default=True)
     order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

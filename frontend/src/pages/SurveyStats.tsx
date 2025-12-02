@@ -201,7 +201,7 @@ const SurveyStatsPage = () => {
                   </div>
                 )
               })()
-            ) : question.question_type === 'matrix' ? (
+            ) : (question.question_type === 'matrix' || question.question_type === 'matrix_mul') ? (
               (() => {
                 const matrixData = question.data as Record<string, Record<string, number>>
                 const hasData = matrixData && Object.keys(matrixData).length > 0 && question.total_answers > 0

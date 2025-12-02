@@ -34,6 +34,9 @@ const PublicSurvey = () => {
           initialAnswers[q.id!] = []
         } else if (q.question_type === 'matrix') {
           initialAnswers[q.id!] = {}
+        } else if (q.question_type === 'matrix_mul') {
+          // Para matriz múltiple: objeto { rowId: number[] }
+          initialAnswers[q.id!] = {}
         }
       })
       setAnswers(initialAnswers)
@@ -94,6 +97,23 @@ const PublicSurvey = () => {
         }
       } else if (questionType === 'matrix') {
         return { ...prev, [questionId]: { ...prev[questionId], ...value } }
+      } else if (questionType === 'matrix_mul') {
+        // value viene como { [rowId]: colId }
+        const rowId = Object.keys(value)[0]
+        const colId = value[rowId]
+        const currentForQuestion = prev[questionId] || {}
+        const currentForRow: number[] = currentForQuestion[rowId] || []
+        const exists = currentForRow.includes(colId)
+        const newForRow = exists
+          ? currentForRow.filter((c) => c !== colId)
+          : [...currentForRow, colId]
+        return {
+          ...prev,
+          [questionId]: {
+            ...currentForQuestion,
+            [rowId]: newForRow,
+          },
+        }
       } else {
         return { ...prev, [questionId]: value }
       }
@@ -135,6 +155,20 @@ const PublicSurvey = () => {
                 matrix_row: parseInt(rowId),
                 matrix_column: colId as number,
               })
+            })
+          }
+        } else if (question.question_type === 'matrix_mul') {
+          if (answer && typeof answer === 'object') {
+            Object.entries(answer).forEach(([rowId, cols]) => {
+              if (Array.isArray(cols)) {
+                cols.forEach((colId: number) => {
+                  responseAnswers.push({
+                    question: question.id!,
+                    matrix_row: parseInt(rowId),
+                    matrix_column: colId,
+                  })
+                })
+              }
             })
           }
         }
@@ -286,7 +320,7 @@ const PublicSurvey = () => {
                   </div>
                 )}
 
-                {question.question_type === 'matrix' && question.matrix_rows && question.matrix_rows.length > 0 && question.matrix_columns && question.matrix_columns.length > 0 && (
+                {(question.question_type === 'matrix' || question.question_type === 'matrix_mul') && question.matrix_rows && question.matrix_rows.length > 0 && question.matrix_columns && question.matrix_columns.length > 0 && (
                   <div className="overflow-x-auto">
                     <table className="min-w-full border border-gray-300">
                       <thead>
@@ -307,21 +341,38 @@ const PublicSurvey = () => {
                             </td>
                             {question.matrix_columns?.map((col) => (
                               <td key={col.id} className="border border-gray-300 px-4 py-2 text-center">
-                                <input
-                                  type="radio"
-                                  name={`question-${question.id}-row-${row.id}`}
-                                  checked={
-                                    answers[question.id!]?.[row.id!] === col.id
-                                  }
-                                  onChange={() =>
-                                    handleAnswerChange(
-                                      question.id!,
-                                      { [row.id!]: col.id },
-                                      'matrix'
-                                    )
-                                  }
-                                  required={question.is_required}
-                                />
+                                {question.question_type === 'matrix' ? (
+                                  <input
+                                    type="radio"
+                                    name={`question-${question.id}-row-${row.id}`}
+                                    checked={
+                                      answers[question.id!]?.[row.id!] === col.id
+                                    }
+                                    onChange={() =>
+                                      handleAnswerChange(
+                                        question.id!,
+                                        { [row.id!]: col.id },
+                                        'matrix'
+                                      )
+                                    }
+                                    required={question.is_required}
+                                  />
+                                ) : (
+                                  <input
+                                    type="checkbox"
+                                    checked={
+                                      Array.isArray(answers[question.id!]?.[row.id!]) &&
+                                      answers[question.id!]?.[row.id!].includes(col.id)
+                                    }
+                                    onChange={() =>
+                                      handleAnswerChange(
+                                        question.id!,
+                                        { [row.id!]: col.id },
+                                        'matrix_mul'
+                                      )
+                                    }
+                                  />
+                                )}
                               </td>
                             ))}
                           </tr>
@@ -332,7 +383,7 @@ const PublicSurvey = () => {
                 )}
                 
                 {/* Debug: mostrar si no se renderizó ningún tipo */}
-                {question.question_type !== 'single' && question.question_type !== 'multiple' && question.question_type !== 'matrix' && (
+                {question.question_type !== 'single' && question.question_type !== 'multiple' && question.question_type !== 'matrix' && question.question_type !== 'matrix_mul' && (
                   <div className="text-red-500 text-sm">
                     Tipo de pregunta desconocido: {question.question_type}
                   </div>

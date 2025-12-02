@@ -54,7 +54,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('text', models.TextField()),
-                ('question_type', models.CharField(choices=[('single', 'Opción Única'), ('multiple', 'Opción Múltiple'), ('matrix', 'Matriz opción única')], max_length=10)),
+                # max_length 20 para soportar valores como 'matrix_multiple'
+                ('question_type', models.CharField(choices=[('single', 'Opción Única'), ('multiple', 'Opción Múltiple'), ('matrix', 'Matriz opción única')], max_length=20)),
                 ('is_required', models.BooleanField(default=True)),
                 ('order', models.IntegerField(default=0)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),

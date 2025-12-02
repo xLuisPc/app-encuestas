@@ -469,6 +469,7 @@ const SurveyForm = () => {
                       <option value="single">Opción Única</option>
                       <option value="multiple">Opción Múltiple</option>
                       <option value="matrix">Matriz Opción Única</option>
+                      <option value="matrix_mul">Matriz Opción Múltiple</option>
                     </select>
                   </div>
 
@@ -516,7 +517,7 @@ const SurveyForm = () => {
                         </div>
                       ))}
                     </div>
-                  ) : question.question_type === 'matrix' ? (
+                  ) : (question.question_type === 'matrix' || question.question_type === 'matrix_mul') ? (
                     <div className="space-y-4">
                       <div>
                         <div className="flex justify-between items-center mb-2">
