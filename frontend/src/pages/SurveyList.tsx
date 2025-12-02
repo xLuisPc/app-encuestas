@@ -4,11 +4,15 @@ import Layout from '../components/Layout'
 import { useAuth } from '../contexts/AuthContext'
 import { surveysApi, Survey } from '../api/surveys'
 import { format } from 'date-fns'
+import { Button, Mosaic } from '../components/ui'
 
 const SurveyList = () => {
   const { user } = useAuth()
   const [surveys, setSurveys] = useState<Survey[]>([])
+  const [filteredSurveys, setFilteredSurveys] = useState<Survey[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showSearchLoader, setShowSearchLoader] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -19,11 +23,35 @@ const SurveyList = () => {
     try {
       const data = await surveysApi.getSurveys()
       setSurveys(data)
+      setFilteredSurveys(data)
     } catch (error) {
       console.error('Error loading surveys:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  // Filtrar encuestas según el término de búsqueda
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredSurveys(surveys)
+    } else {
+      const filtered = surveys.filter((survey) => {
+        const searchLower = searchTerm.toLowerCase()
+        return (
+          survey.title.toLowerCase().includes(searchLower) ||
+          survey.description?.toLowerCase().includes(searchLower)
+        )
+      })
+      setFilteredSurveys(filtered)
+    }
+  }, [searchTerm, surveys])
+
+  const handleSearch = () => {
+    setShowSearchLoader(true)
+    setTimeout(() => {
+      setShowSearchLoader(false)
+    }, 5000)
   }
 
   const handleDelete = async (id: string) => {
@@ -40,111 +68,156 @@ const SurveyList = () => {
 
   return (
     <Layout>
-      <div className="px-4 py-6 sm:px-0">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Encuestas</h1>
-          {(user?.role === 'admin' || user?.role === 'creator') && (
-            <Link
-              to="/surveys/new"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Barra de búsqueda */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative w-full max-w-xl">
+            {/* “píldora” blanca con sombra suave */}
+            <div className="rounded-full bg-gradient-to-r from-gray-200 to-gray-100 p-[3px] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
+              <div className="flex items-center bg-white rounded-full pl-6 pr-16 py-4">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      // ya filtras en tiempo real, esto es solo por si quieres manejar algo aquí
+                    }
+                  }}
+                  className="w-full bg-transparent text-base text-gray-800 placeholder-gray-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* botón circular que "flota" a la derecha */}
+            <button
+              type="button"
+              onClick={handleSearch}
+              aria-label="Buscar"
+              className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/4
+                        w-14 h-14 rounded-full flex items-center justify-center
+                        shadow-[0_12px_30px_rgba(37,99,235,0.35)]
+                        transition-all duration-200
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent"
+              style={{ backgroundColor: '#2563eb' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
             >
-              Nueva Encuesta
-            </Link>
-          )}
+              <svg
+                className="h-6 w-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-12">Cargando...</div>
-        ) : surveys.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">Cargando...</div>
+        ) : showSearchLoader ? (
+          <div className="fixed inset-0 flex justify-center items-center bg-gray-50 bg-opacity-75 z-50">
+            <Mosaic color="#2563eb" size="medium" text="" textColor="" />
+          </div>
+        ) : filteredSurveys.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
-            No hay encuestas disponibles
+            {searchTerm ? 'No se encontraron encuestas que coincidan con tu búsqueda' : 'No hay encuestas disponibles'}
           </div>
         ) : (
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul className="divide-y divide-gray-200">
-              {surveys.map((survey) => (
-                <li key={survey.id}>
-                  <div className="px-4 py-4 sm:px-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center flex-1">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-blue-600 truncate">
-                            {survey.title}
-                          </p>
-                          <p className="mt-1 text-sm text-gray-500 truncate">
-                            {survey.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="ml-4 flex-shrink-0 flex space-x-2">
-                        {survey.is_open ? (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Activa
-                          </span>
-                        ) : (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                            Inactiva
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-2 sm:flex sm:justify-between">
-                      <div className="sm:flex">
-                        <p className="flex items-center text-sm text-gray-500">
-                          {format(new Date(survey.start_date), 'dd MMM yyyy')} - {format(new Date(survey.end_date), 'dd MMM yyyy')}
-                        </p>
-                      </div>
-                      <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 space-x-4">
-                        <p>{survey.total_responses || 0} respuestas</p>
-                        <button
-                          onClick={() => {
-                            const publicUrl = `${window.location.origin}/survey/${survey.id}`
-                            navigator.clipboard.writeText(publicUrl).then(() => {
-                              alert('Enlace copiado al portapapeles: ' + publicUrl)
-                            }).catch(() => {
-                              // Fallback para navegadores que no soportan clipboard API
-                              const textArea = document.createElement('textarea')
-                              textArea.value = publicUrl
-                              document.body.appendChild(textArea)
-                              textArea.select()
-                              document.execCommand('copy')
-                              document.body.removeChild(textArea)
-                              alert('Enlace copiado al portapapeles: ' + publicUrl)
-                            })
-                          }}
-                          className="text-purple-600 hover:text-purple-800 font-medium"
-                          title="Copiar enlace público"
-                        >
-                          📋 Compartir
-                        </button>
-                        <Link
-                          to={`/surveys/${survey.id}/stats`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Ver Estadísticas
-                        </Link>
-                        {(user?.role === 'admin' || (user?.role === 'creator' && survey.creator === user.id)) && (
-                          <>
-                            <button
-                              onClick={() => navigate(`/surveys/${survey.id}/edit`)}
-                              className="text-green-600 hover:text-green-800"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDelete(survey.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Eliminar
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
+          <div className="grid grid-cols-1 gap-4">
+            {filteredSurveys.map((survey) => (
+              <div
+                key={survey.id}
+                className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200"
+              >
+                <div className="mb-4">
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <h3 className="text-xl font-semibold text-gray-900 truncate flex-1 min-w-0">
+                      {survey.title}
+                    </h3>
+                    {survey.is_open ? (
+                      <span className="px-4 py-1.5 inline-flex text-sm font-semibold rounded-full bg-green-100 text-green-800 flex-shrink-0">
+                        Activa
+                      </span>
+                    ) : (
+                      <span className="px-4 py-1.5 inline-flex text-sm font-semibold rounded-full bg-gray-100 text-gray-800 flex-shrink-0">
+                        Inactiva
+                      </span>
+                    )}
                   </div>
-                </li>
-              ))}
-            </ul>
+                  <div className="flex items-center justify-between gap-4">
+                    {survey.description ? (
+                      <p className="text-base text-gray-500 line-clamp-2 flex-1 min-w-0">
+                        {survey.description}
+                      </p>
+                    ) : (
+                      <div className="flex-1"></div>
+                    )}
+                    <span className="text-base text-gray-500 flex-shrink-0">
+                      {survey.total_responses || 0} respuestas
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-4 text-base text-gray-500 mb-4">
+                  <span>
+                    {format(new Date(survey.start_date), 'dd MMM yyyy')} - {format(new Date(survey.end_date), 'dd MMM yyyy')}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      const publicUrl = `${window.location.origin}/survey/${survey.id}`
+                      navigator.clipboard.writeText(publicUrl).then(() => {
+                        alert('Enlace copiado al portapapeles: ' + publicUrl)
+                      }).catch(() => {
+                        const textArea = document.createElement('textarea')
+                        textArea.value = publicUrl
+                        document.body.appendChild(textArea)
+                        textArea.select()
+                        document.execCommand('copy')
+                        document.body.removeChild(textArea)
+                        alert('Enlace copiado al portapapeles: ' + publicUrl)
+                      })
+                    }}
+                    className="text-sm"
+                  >
+                    Compartir
+                  </Button>
+                  <Link to={`/surveys/${survey.id}/stats`}>
+                    <Button variant="primary" className="text-sm">
+                      Ver Estadísticas
+                    </Button>
+                  </Link>
+                  {(user?.role === 'admin' || (user?.role === 'creator' && survey.creator === user.id)) && (
+                    <>
+                      <Button
+                        variant="primary"
+                        onClick={() => navigate(`/surveys/${survey.id}/edit`)}
+                        className="text-sm"
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="primary"
+                        onClick={() => handleDelete(survey.id)}
+                        className="text-sm text-red-600 hover:text-red-700 hover:border-red-300"
+                      >
+                        Eliminar
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
