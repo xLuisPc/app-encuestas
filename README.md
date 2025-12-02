@@ -89,6 +89,9 @@ docker-compose exec backend bash
 
 # Ejecutar comandos Django
 docker-compose exec backend python manage.py <comando>
+
+# Sweet alert Failed import
+docker-compose exec frontend npm install sweetalert2
 ```
 
 ### Credenciales por defecto del superusuario
