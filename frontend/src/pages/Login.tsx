@@ -10,6 +10,8 @@ const Login = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
 
+  const backgroundImageUrl = '/loggin.jpg'
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -20,21 +22,18 @@ const Login = () => {
       navigate('/')
     } catch (err: any) {
       console.error('Error de login:', err)
-      // Manejar diferentes formatos de error
       let errorMessage = 'Error al iniciar sesión'
       if (err.response) {
-        // Error del servidor
         if (err.response.data) {
-          errorMessage = err.response.data.detail || 
-                        err.response.data.error || 
-                        err.response.data.message ||
-                        JSON.stringify(err.response.data)
+          errorMessage = err.response.data.detail ||
+            err.response.data.error ||
+            err.response.data.message ||
+            JSON.stringify(err.response.data)
         } else {
           errorMessage = `Error ${err.response.status}: ${err.response.statusText}`
         }
       } else if (err.request) {
-        // Error de red
-        errorMessage = 'No se pudo conectar con el servidor. Verifica que el backend esté corriendo.'
+        errorMessage = 'No se pudo conectar con el servidor.'
       } else {
         errorMessage = err.message || 'Error desconocido'
       }
@@ -45,61 +44,101 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
-            Iniciar Sesión
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+    <div className="min-h-screen flex items-center justify-center bg-green-50 p-6">
+      <div className="bg-white w-full max-w-6xl rounded-3xl shadow-lg overflow-hidden grid grid-cols-1 lg:grid-cols-2">
+
+        {/* IZQUIERDA */}
+        <div className="p-10 flex flex-col justify-between">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center mb-10">
+            <h1 className="text-2xl font-bold text-green-600">App Encuestas</h1>
+
+            <div className="text-sm flex items-center gap-1 cursor-pointer text-gray-600 hover:text-gray-900">
+              <span>ES</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
-          )}
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Usuario
-              </label>
+          </div>
+
+          {/* Form */}
+          <div>
+            <h2 className="text-4xl font-bold text-gray-900">Bienvenido!</h2>
+            <p className="text-gray-600 mt-3 mb-8">
+              Para conectarte a tu cuenta, escribe tu email y tu contraseña.
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-400 text-red-700 px-4 py-3 rounded">
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+
               <input
-                id="username"
                 type="text"
+                placeholder="Tu dirección email"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:bg-white transition"
               />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Contraseña
-              </label>
+
               <input
-                id="password"
                 type="password"
+                placeholder="Tu contraseña"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                disabled={loading}
+                className="w-full px-4 py-3 bg-gray-100 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:bg-white transition"
               />
-            </div>
+
+              {/* <div className="text-right">
+                <button className="text-sm text-green-600 hover:text-green-700">
+                  ¿Has olvidado tu contraseña?
+                </button>
+              </div> */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50"
+              >
+                {loading ? "Iniciando..." : "Iniciar sesión"}
+              </button>
+            </form>
           </div>
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-            </button>
+
+          {/* Footer */}
+          <div className="text-center mt-10">
+            <p className="text-sm text-gray-600">¿Necesitas ayuda?</p>
+            <a href="mailto:support@encuestas.com" className="text-green-600 text-sm hover:text-green-700">
+              support@encuestas.com
+            </a>
+
+            <p className="text-xs text-gray-500 mt-4">
+              © Todos los derechos reservados App Encuestas 2025
+            </p>
           </div>
-        </form>
+
+        </div>
+
+        {/* DERECHA */}
+        <div
+          className="relative bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${backgroundImageUrl})`
+          }}>
+
+        </div>
+
       </div>
     </div>
   )
 }
 
 export default Login
-
