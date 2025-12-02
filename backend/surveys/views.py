@@ -162,6 +162,14 @@ class SurveyViewSet(viewsets.ModelViewSet):
                         question_stats['total_answers'] = Answer.objects.filter(
                             question=question
                         ).values('response').distinct().count()
+
+                    elif question.question_type == 'open':
+                        # Contar cuántas respuestas de texto hay (no vacías)
+                        total_text = Answer.objects.filter(
+                            question=question
+                        ).exclude(text_answer__isnull=True).exclude(text_answer__exact='').count()
+                        question_stats['data'] = {'Respuestas abiertas': total_text}
+                        question_stats['total_answers'] = total_text
                 except Exception as e:
                     # Si hay error procesando una pregunta, continuar con las demás
                     import logging
@@ -367,6 +375,33 @@ class SurveyViewSet(viewsets.ModelViewSet):
                     # Colocar la gráfica de barras más abajo para dejar espacio arriba
                     chart_row = row + 18
                     ws.add_chart(bar_chart, f'E{chart_row}')
+
+            elif question.question_type == 'open':
+                # Listar todas las respuestas de texto sin gráficas
+                ws[f'A{row}'] = "Respuestas abiertas"
+                ws[f'A{row}'].font = subtitle_font
+                ws.merge_cells(f'A{row}:F{row}')
+                row += 2
+
+                ws[f'A{row}'] = "N°"
+                ws[f'B{row}'] = "Respuesta"
+                ws[f'A{row}'].fill = header_fill
+                ws[f'B{row}'].fill = header_fill
+                ws[f'A{row}'].font = header_font
+                ws[f'B{row}'].font = header_font
+                row += 1
+
+                answers_qs = Answer.objects.filter(
+                    question=question
+                ).exclude(text_answer__isnull=True).exclude(text_answer__exact='')
+
+                idx = 1
+                for ans in answers_qs:
+                    ws[f'A{row}'] = idx
+                    ws[f'B{row}'] = ans.text_answer
+                    ws[f'B{row}'].alignment = Alignment(wrap_text=True)
+                    row += 1
+                    idx += 1
             
             # Ajustar ancho de columnas para esta hoja
             ws.column_dimensions['A'].width = 35

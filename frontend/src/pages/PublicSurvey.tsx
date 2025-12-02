@@ -37,6 +37,9 @@ const PublicSurvey = () => {
         } else if (q.question_type === 'matrix_mul') {
           // Para matriz múltiple: objeto { rowId: number[] }
           initialAnswers[q.id!] = {}
+        } else if (q.question_type === 'open') {
+          // Para respuesta abierta: cadena vacía
+          initialAnswers[q.id!] = ''
         }
       })
       setAnswers(initialAnswers)
@@ -169,6 +172,13 @@ const PublicSurvey = () => {
                   })
                 })
               }
+            })
+          }
+        } else if (question.question_type === 'open') {
+          if (answer && typeof answer === 'string' && answer.trim() !== '') {
+            responseAnswers.push({
+              question: question.id!,
+              text_answer: answer.trim(),
             })
           }
         }
@@ -383,7 +393,24 @@ const PublicSurvey = () => {
                 )}
                 
                 {/* Debug: mostrar si no se renderizó ningún tipo */}
-                {question.question_type !== 'single' && question.question_type !== 'multiple' && question.question_type !== 'matrix' && question.question_type !== 'matrix_mul' && (
+                {question.question_type === 'open' && (
+                  <textarea
+                    value={answers[question.id!] || ''}
+                    onChange={(e) =>
+                      handleAnswerChange(question.id!, e.target.value, 'open')
+                    }
+                    required={question.is_required}
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
+                    rows={4}
+                    placeholder="Escribe tu respuesta..."
+                  />
+                )}
+
+                {question.question_type !== 'single' &&
+                  question.question_type !== 'multiple' &&
+                  question.question_type !== 'matrix' &&
+                  question.question_type !== 'matrix_mul' &&
+                  question.question_type !== 'open' && (
                   <div className="text-red-500 text-sm">
                     Tipo de pregunta desconocido: {question.question_type}
                   </div>

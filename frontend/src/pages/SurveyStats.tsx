@@ -248,6 +248,10 @@ const SurveyStatsPage = () => {
                   </div>
                 )
               })()
+            ) : question.question_type === 'open' ? (
+              <div className="text-center py-8 text-gray-500">
+                Pregunta de respuesta abierta. Revisa las respuestas en la exportación a Excel.
+              </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 Tipo de pregunta desconocido

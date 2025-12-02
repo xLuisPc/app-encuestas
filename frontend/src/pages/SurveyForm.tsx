@@ -478,6 +478,7 @@ const SurveyForm = () => {
                       <option value="multiple">Opción Múltiple</option>
                       <option value="matrix">Matriz Opción Única</option>
                       <option value="matrix_mul">Matriz Opción Múltiple</option>
+                      <option value="open">Respuesta abierta</option>
                     </select>
                   </div>
 

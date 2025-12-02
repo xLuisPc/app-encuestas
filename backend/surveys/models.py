@@ -48,6 +48,7 @@ class Question(models.Model):
         ('matrix', 'Matriz opción única'),
         # Usamos clave corta 'matrix_mul' (<= 10 chars) para respetar el tipo varchar(10) existente
         ('matrix_mul', 'Matriz Opción Múltiple'),
+        ('open', 'Respuesta abierta'),
     ]
     
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')

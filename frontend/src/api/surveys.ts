@@ -21,7 +21,7 @@ export interface MatrixColumn {
 export interface Question {
   id?: number
   text: string
-  question_type: 'single' | 'multiple' | 'matrix' | 'matrix_mul'
+  question_type: 'single' | 'multiple' | 'matrix' | 'matrix_mul' | 'open'
   is_required: boolean
   order: number
   options?: Option[]
@@ -74,7 +74,7 @@ export interface Response {
 export interface QuestionStats {
   id: number
   text: string
-  question_type: 'single' | 'multiple' | 'matrix' | 'matrix_mul'
+  question_type: 'single' | 'multiple' | 'matrix' | 'matrix_mul' | 'open'
   total_answers: number
   data: Record<string, number> | Record<string, Record<string, number>>
 }
