@@ -12,19 +12,41 @@ const SurveyStatsPage = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Resetear estado cuando cambia el ID
+    setStats(null)
+    setLoading(true)
+    
     if (id) {
       loadStats()
+    } else {
+      setLoading(false)
     }
   }, [id])
 
   const loadStats = async () => {
+    if (!id) return
+    
+    setLoading(true)
+    setStats(null) // Limpiar stats anteriores
+    
     try {
-      const data = await surveysApi.getStatistics(id!)
+      const data = await surveysApi.getStatistics(id)
       console.log('Stats loaded:', data) // Debug
       console.log('Questions:', data.questions) // Debug
-      setStats(data)
+      console.log('Questions count:', data.questions?.length) // Debug
+      
+      // Validar que los datos sean correctos
+      if (data && data.survey && Array.isArray(data.questions)) {
+        setStats(data)
+      } else {
+        console.error('Datos inválidos recibidos:', data)
+        alert('Error: Los datos recibidos no son válidos')
+      }
     } catch (error: any) {
       console.error('Error loading stats:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      
       let errorMessage = 'Error al cargar las estadísticas'
       if (error.response) {
         if (error.response.status === 403) {
@@ -37,7 +59,10 @@ const SurveyStatsPage = () => {
       } else if (error.request) {
         errorMessage = 'No se pudo conectar con el servidor'
       }
+      
+      // Mostrar error pero permitir que la página se renderice
       alert(errorMessage)
+      setStats(null) // Asegurar que stats sea null en caso de error
     } finally {
       setLoading(false)
     }
@@ -63,15 +88,32 @@ const SurveyStatsPage = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="text-center py-12">Cargando estadísticas...</div>
+        <div className="text-center py-12">
+          <div className="text-lg text-gray-600">Cargando estadísticas...</div>
+        </div>
       </Layout>
     )
   }
 
-  if (!stats) {
+  if (!stats || !stats.survey) {
     return (
       <Layout>
-        <div className="text-center py-12 text-red-600">No se pudieron cargar las estadísticas</div>
+        <div className="px-4 py-6 sm:px-0">
+          <div className="text-center py-12">
+            <div className="text-red-600 text-lg font-semibold mb-2">
+              No se pudieron cargar las estadísticas
+            </div>
+            <button
+              onClick={() => {
+                setLoading(true)
+                loadStats()
+              }}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
       </Layout>
     )
   }

@@ -62,6 +62,13 @@ class SurveyViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
+        # Verificar permisos explícitamente
+        if not CanViewStatistics().has_object_permission(request, self, survey):
+            return DRFResponse(
+                {'error': 'No tienes permisos para ver las estadísticas de esta encuesta.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         try:
             stats = {
                 'survey': {
@@ -94,7 +101,7 @@ class SurveyViewSet(viewsets.ModelViewSet):
                             option['selected_option__text']: option['count']
                             for option in answers
                         }
-                        question_stats['total_answers'] = sum(question_stats['data'].values()) if question_stats['data'] else 0 if question_stats['data'] else 0
+                        question_stats['total_answers'] = sum(question_stats['data'].values()) if question_stats['data'] else 0
                     
                     elif question.question_type == 'multiple':
                         # Contar respuestas por opción (puede haber múltiples por respuesta)
@@ -437,19 +444,19 @@ def ResponseCreateView(request):
             status=400
         )
     
-        if now < survey.start_date:
-            start_str = survey.start_date.isoformat() if hasattr(survey.start_date, 'isoformat') else str(survey.start_date)
-            return JsonResponse(
-                {'error': f'Esta encuesta aún no está disponible. Inicia el {start_str}.'},
-                status=400
-            )
-        
-        if now > survey.end_date:
-            end_str = survey.end_date.isoformat() if hasattr(survey.end_date, 'isoformat') else str(survey.end_date)
-            return JsonResponse(
-                {'error': f'Esta encuesta ya cerró el {end_str}.'},
-                status=400
-            )
+    if now < survey.start_date:
+        start_str = survey.start_date.isoformat() if hasattr(survey.start_date, 'isoformat') else str(survey.start_date)
+        return JsonResponse(
+            {'error': f'Esta encuesta aún no está disponible. Inicia el {start_str}.'},
+            status=400
+        )
+    
+    if now > survey.end_date:
+        end_str = survey.end_date.isoformat() if hasattr(survey.end_date, 'isoformat') else str(survey.end_date)
+        return JsonResponse(
+            {'error': f'Esta encuesta ya cerró el {end_str}.'},
+            status=400
+        )
     
     try:
         # Log para debug

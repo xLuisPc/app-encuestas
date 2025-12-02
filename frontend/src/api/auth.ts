@@ -61,5 +61,18 @@ export const authApi = {
     const response = await api.get('/auth/profile/')
     return response.data
   },
+
+  getViewers: async (): Promise<User[]> => {
+    const response = await api.get('/auth/viewers/')
+    console.log('Response completa:', response)
+    console.log('Response data:', response.data)
+    // Manejar respuesta paginada o directa
+    if (response.data && Array.isArray(response.data)) {
+      return response.data
+    } else if (response.data && response.data.results && Array.isArray(response.data.results)) {
+      return response.data.results
+    }
+    return []
+  },
 }
 

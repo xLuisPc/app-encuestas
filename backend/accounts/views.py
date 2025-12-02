@@ -43,3 +43,16 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+
+class ViewerListView(generics.ListAPIView):
+    """Lista usuarios con rol 'viewer' para asignar a encuestas"""
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Solo admin y creadores pueden ver la lista de visualizadores
+        user = self.request.user
+        if user.is_admin() or user.is_creator():
+            return User.objects.filter(role='viewer').order_by('username')
+        return User.objects.none()
+

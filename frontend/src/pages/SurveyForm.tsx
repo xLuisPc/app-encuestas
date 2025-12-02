@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { surveysApi, Survey, Question, SurveyCreate } from '../api/surveys'
 import { useAuth } from '../contexts/AuthContext'
+import { authApi, User } from '../api/auth'
 import { utcToLocalDateTime, localDateTimeToUTC } from '../utils/dateUtils'
 
 const SurveyForm = () => {
@@ -10,6 +11,7 @@ const SurveyForm = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [viewers, setViewers] = useState<User[]>([])
   const [survey, setSurvey] = useState<SurveyCreate>({
     title: '',
     description: '',
@@ -17,17 +19,78 @@ const SurveyForm = () => {
     end_date: '',
     is_active: true,
     questions: [],
+    assigned_viewers: [],
   })
 
   useEffect(() => {
+    loadViewers()
     if (id) {
       loadSurvey()
     }
   }, [id])
 
+  const loadViewers = async () => {
+    try {
+      // Solo cargar si el usuario es admin o creator
+      if (user && (user.role === 'admin' || user.role === 'creator')) {
+        console.log('Cargando visualizadores...')
+        const data = await authApi.getViewers()
+        console.log('Viewers recibidos del API:', data)
+        console.log('Tipo de datos:', typeof data, Array.isArray(data))
+        console.log('Cantidad de viewers:', data?.length)
+        
+        // Asegurar que sea un array
+        if (Array.isArray(data)) {
+          setViewers(data)
+          console.log('Viewers establecidos en estado:', data)
+        } else if (data && data.results) {
+          // Si viene paginado
+          setViewers(data.results)
+          console.log('Viewers establecidos desde results:', data.results)
+        } else {
+          console.warn('Formato de datos inesperado:', data)
+          setViewers([])
+        }
+      } else {
+        console.log('Usuario no tiene permisos para ver viewers:', user?.role)
+      }
+    } catch (error: any) {
+      console.error('Error loading viewers:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      // Mostrar mensaje si hay error pero permitir continuar
+      setViewers([])
+    }
+  }
+
+  // Cuando cambia la lista de viewers, filtrar los IDs guardados que ya no sean válidos
+  useEffect(() => {
+    if (!id || viewers.length === 0) return
+
+    setSurvey((prev) => {
+      if (!prev.assigned_viewers || prev.assigned_viewers.length === 0) {
+        return prev
+      }
+
+      const validIds = prev.assigned_viewers.filter((viewerId) =>
+        viewers.some((viewer) => viewer.id === viewerId)
+      )
+
+      if (validIds.length === prev.assigned_viewers.length) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        assigned_viewers: validIds,
+      }
+    })
+  }, [viewers, id])
+
   const loadSurvey = async () => {
     try {
       const data = await surveysApi.getSurvey(id!)
+      console.log('Encuesta cargada:', data)
       setSurvey({
         title: data.title,
         description: data.description,
@@ -35,8 +98,9 @@ const SurveyForm = () => {
         end_date: utcToLocalDateTime(data.end_date), // Convertir UTC a hora local para mostrar
         is_active: data.is_active,
         questions: data.questions,
-        assigned_viewers: data.assigned_viewers,
+        assigned_viewers: data.assigned_viewers || [], // Asegurar que siempre sea un array
       })
+      console.log('assigned_viewers cargados:', data.assigned_viewers)
     } catch (error) {
       console.error('Error loading survey:', error)
     }
@@ -153,11 +217,26 @@ const SurveyForm = () => {
 
     try {
       // Convertir fechas de hora local a UTC antes de enviar
+      // Asegurar que assigned_viewers sea un array de números válidos y que existan en viewers
+      const viewerIdsSet = new Set(viewers.map((viewer) => viewer.id))
+      const assignedViewersIds = Array.isArray(survey.assigned_viewers)
+        ? survey.assigned_viewers
+            .map((id) => (typeof id === 'string' ? parseInt(id, 10) : id))
+            .filter((id) => !isNaN(id) && viewerIdsSet.has(id))
+        : []
+      
       const surveyToSend = {
-        ...survey,
+        title: survey.title,
+        description: survey.description,
         start_date: localDateTimeToUTC(survey.start_date),
         end_date: localDateTimeToUTC(survey.end_date),
+        is_active: survey.is_active,
+        questions: survey.questions,
+        assigned_viewers: assignedViewersIds,
       }
+      
+      console.log('Enviando encuesta:', surveyToSend)
+      console.log('assigned_viewers:', assignedViewersIds)
       
       let surveyId = id
       if (id) {
@@ -193,7 +272,13 @@ const SurveyForm = () => {
       navigate('/surveys')
     } catch (error: any) {
       console.error('Error saving survey:', error)
-      alert('Error al guardar la encuesta')
+      if (error.response) {
+        console.error('Response status:', error.response.status)
+        console.error('Response data:', error.response.data)
+        alert(`Error al guardar la encuesta: ${JSON.stringify(error.response.data)}`)
+      } else {
+        alert('Error al guardar la encuesta')
+      }
     } finally {
       setLoading(false)
     }
@@ -262,6 +347,78 @@ const SurveyForm = () => {
                   <span className="text-sm font-medium text-gray-700">Activa</span>
                 </label>
               </div>
+              {(user?.role === 'admin' || user?.role === 'creator') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Visualizadores asignados
+                  </label>
+                  {viewers.length > 0 ? (
+                    <div className="mt-2 space-y-2 border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
+                      {viewers.map((viewer) => {
+                        const isSelected = survey.assigned_viewers?.includes(viewer.id) || false
+                        return (
+                          <label
+                            key={viewer.id}
+                            className={`flex items-center p-3 rounded-lg cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-blue-50 border-2 border-blue-500'
+                                : 'bg-white border-2 border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const currentViewers = survey.assigned_viewers || []
+                                if (e.target.checked) {
+                                  // Agregar viewer
+                                  setSurvey({
+                                    ...survey,
+                                    assigned_viewers: [...currentViewers, viewer.id],
+                                  })
+                                } else {
+                                  // Remover viewer
+                                  setSurvey({
+                                    ...survey,
+                                    assigned_viewers: currentViewers.filter((id) => id !== viewer.id),
+                                  })
+                                }
+                              }}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <div className="ml-3 flex-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {viewer.username}
+                                </span>
+                                {isSelected && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    Seleccionado
+                                  </span>
+                                )}
+                              </div>
+                              {viewer.email && (
+                                <p className="text-xs text-gray-500 mt-1">{viewer.email}</p>
+                              )}
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p className="text-sm text-yellow-800">
+                        No hay usuarios con rol "viewer" disponibles. Crea usuarios con rol "viewer" para poder asignarlos a esta encuesta.
+                      </p>
+                    </div>
+                  )}
+                  {survey.assigned_viewers && survey.assigned_viewers.length > 0 && (
+                    <p className="mt-3 text-sm text-green-600 font-medium">
+                      ✓ {survey.assigned_viewers.length} visualizador(es) seleccionado(s)
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

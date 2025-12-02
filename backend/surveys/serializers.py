@@ -140,8 +140,8 @@ class SurveySerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, required=False)
     creator_name = serializers.CharField(source='creator.username', read_only=True)
     assigned_viewers = serializers.PrimaryKeyRelatedField(
-        many=True, 
-        queryset=User.objects.none(),  # Se actualizará en __init__
+        many=True,
+        queryset=User.objects.all(),
         required=False,
         allow_null=True
     )
@@ -158,8 +158,8 @@ class SurveySerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Actualizar queryset para assigned_viewers
-        self.fields['assigned_viewers'].queryset = User.objects.filter(role='viewer')
+        # Ya se establece el queryset completo en la definición; se conserva por compatibilidad
+        pass
 
     def create(self, validated_data):
         questions_data = validated_data.pop('questions', [])
@@ -204,6 +204,15 @@ class SurveySerializer(serializers.ModelSerializer):
                 })
         
         return instance
+
+    def validate_assigned_viewers(self, value):
+        """Asegura que solo se asignen usuarios con rol viewer"""
+        invalid_users = [user.username for user in value if user.role != 'viewer']
+        if invalid_users:
+            raise serializers.ValidationError(
+                f"Los siguientes usuarios no son visualizadores: {', '.join(invalid_users)}"
+            )
+        return value
 
 
 class SurveyPublicSerializer(serializers.ModelSerializer):
@@ -257,8 +266,36 @@ class ResponseSerializer(serializers.ModelSerializer):
             **validated_data
         )
         
+        # Crear respuestas (answers) para cada pregunta
+        created_answers = []
         for answer_data in answers_data:
-            Answer.objects.create(response=response, **answer_data)
+            try:
+                # El serializer ya validó los datos, así que podemos usarlos directamente
+                # answer_data ya contiene los objetos ForeignKey correctos
+                answer = Answer.objects.create(
+                    response=response,
+                    question=answer_data.get('question'),
+                    selected_option=answer_data.get('selected_option'),
+                    matrix_row=answer_data.get('matrix_row'),
+                    matrix_column=answer_data.get('matrix_column'),
+                    text_answer=answer_data.get('text_answer', '')
+                )
+                created_answers.append(answer)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f'Error creando answer: {str(e)}, data: {answer_data}')
+                import traceback
+                logger.error(traceback.format_exc())
+                # Continuar con las demás respuestas
+                continue
+        
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f'Response {response.id} creada con {len(created_answers)} answers de {len(answers_data)} esperados')
+        
+        if len(created_answers) != len(answers_data):
+            logger.warning(f'No se crearon todas las respuestas. Esperadas: {len(answers_data)}, Creadas: {len(created_answers)}')
         
         return response
 
