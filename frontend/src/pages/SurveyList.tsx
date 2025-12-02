@@ -14,6 +14,7 @@ const SurveyList = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [showSearchLoader, setShowSearchLoader] = useState(false)
+  const [deletingSurveyId, setDeletingSurveyId] = useState<string | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -56,14 +57,42 @@ const SurveyList = () => {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta encuesta?')) return
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'La encuesta se eliminará permanentemente y no podrá ser recuperada',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true
+    })
 
+    if (!result.isConfirmed) return
+
+    setDeletingSurveyId(id)
     try {
       await surveysApi.deleteSurvey(id)
-      loadSurveys()
+      await loadSurveys()
+      Swal.fire({
+        title: '¡Eliminada!',
+        text: 'La encuesta ha sido eliminada exitosamente',
+        icon: 'success',
+        confirmButtonColor: '#2563eb',
+        timer: 2000,
+        showConfirmButton: false
+      })
     } catch (error) {
       console.error('Error deleting survey:', error)
-      alert('Error al eliminar la encuesta')
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo eliminar la encuesta',
+        icon: 'error',
+        confirmButtonColor: '#2563eb'
+      })
+    } finally {
+      setDeletingSurveyId(null)
     }
   }
 
@@ -125,6 +154,10 @@ const SurveyList = () => {
         {loading ? (
           <div className="text-center py-12 text-gray-500">Cargando...</div>
         ) : showSearchLoader ? (
+          <div className="fixed inset-0 flex justify-center items-center bg-gray-50 bg-opacity-75 z-50">
+            <Mosaic color="#2563eb" size="medium" text="" textColor="" />
+          </div>
+        ) : deletingSurveyId ? (
           <div className="fixed inset-0 flex justify-center items-center bg-gray-50 bg-opacity-75 z-50">
             <Mosaic color="#2563eb" size="medium" text="" textColor="" />
           </div>
