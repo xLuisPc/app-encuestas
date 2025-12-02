@@ -468,7 +468,7 @@ const SurveyForm = () => {
                     >
                       <option value="single">Opción Única</option>
                       <option value="multiple">Opción Múltiple</option>
-                      <option value="matrix">Matriz de Satisfacción</option>
+                      <option value="matrix">Matriz Opción Única</option>
                     </select>
                   </div>
 

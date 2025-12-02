@@ -45,7 +45,7 @@ class Question(models.Model):
     QUESTION_TYPES = [
         ('single', 'Opción Única'),
         ('multiple', 'Opción Múltiple'),
-        ('matrix', 'Matriz de Satisfacción'),
+        ('matrix', 'Matriz opción única'),
     ]
     
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')
