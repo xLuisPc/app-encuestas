@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { surveysApi, Survey } from '../api/surveys'
 import { format } from 'date-fns'
 import { Button, Mosaic } from '../components/ui'
+import Swal from 'sweetalert2'
 
 const SurveyList = () => {
   const { user } = useAuth()
@@ -176,16 +177,52 @@ const SurveyList = () => {
                     variant="primary"
                     onClick={() => {
                       const publicUrl = `${window.location.origin}/survey/${survey.id}`
-                      navigator.clipboard.writeText(publicUrl).then(() => {
-                        alert('Enlace copiado al portapapeles: ' + publicUrl)
-                      }).catch(() => {
-                        const textArea = document.createElement('textarea')
-                        textArea.value = publicUrl
-                        document.body.appendChild(textArea)
-                        textArea.select()
-                        document.execCommand('copy')
-                        document.body.removeChild(textArea)
-                        alert('Enlace copiado al portapapeles: ' + publicUrl)
+                      Swal.fire({
+                        title: 'Enlace de Invitación',
+                        html: `
+                          <div class="text-left">
+                            <p class="mb-4 text-gray-700">Comparte este enlace para que otros puedan responder la encuesta:</p>
+                            <div class="bg-gray-100 p-3 rounded-lg mb-4">
+                              <code class="text-sm break-all">${publicUrl}</code>
+                            </div>
+                          </div>
+                        `,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Copiar Enlace',
+                        cancelButtonText: 'Cerrar',
+                        confirmButtonColor: '#2563eb',
+                        cancelButtonColor: '#6b7280',
+                        reverseButtons: true
+                      }).then((result) => {
+                        if (result.isConfirmed) {
+                          navigator.clipboard.writeText(publicUrl).then(() => {
+                            Swal.fire({
+                              title: '¡Copiado!',
+                              text: 'El enlace ha sido copiado al portapapeles',
+                              icon: 'success',
+                              confirmButtonColor: '#2563eb',
+                              timer: 2000,
+                              showConfirmButton: false
+                            })
+                          }).catch(() => {
+                            // Fallback para navegadores que no soportan clipboard API
+                            const textArea = document.createElement('textarea')
+                            textArea.value = publicUrl
+                            document.body.appendChild(textArea)
+                            textArea.select()
+                            document.execCommand('copy')
+                            document.body.removeChild(textArea)
+                            Swal.fire({
+                              title: '¡Copiado!',
+                              text: 'El enlace ha sido copiado al portapapeles',
+                              icon: 'success',
+                              confirmButtonColor: '#2563eb',
+                              timer: 2000,
+                              showConfirmButton: false
+                            })
+                          })
+                        }
                       })
                     }}
                     className="text-sm"
